@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-up.local/schemas/dataset_manifest.schema.json",
+  "title": "Repo-Up Evidence Study Task Manifest Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "dataset",
+    "benchmark_case_id",
+    "language",
+    "cve_id",
+    "repository_url",
+    "vulnerable_revision",
+    "evaluator_image",
+    "metadata_revision",
+    "vulnerable_state_status",
+    "reference_validation_status",
+    "reset_status",
+    "security_validator_available",
+    "functional_tests_available",
+    "eligible",
+    "exclusion_reason"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dataset": {
+      "const": "PatchEval-Verified"
+    },
+    "benchmark_case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cve_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cwe_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "cve_description": {
+      "type": "string"
+    },
+    "repository_url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vulnerable_revision": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evaluator_image": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evaluator_image_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metadata_revision": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vulnerable_state_status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_AVAILABLE",
+        "ERROR",
+        "TIMEOUT",
+        "UNKNOWN"
+      ]
+    },
+    "reference_validation_status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_AVAILABLE",
+        "ERROR",
+        "TIMEOUT",
+        "UNKNOWN"
+      ]
+    },
+    "reset_status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_AVAILABLE",
+        "ERROR",
+        "UNKNOWN"
+      ]
+    },
+    "security_validator_available": {
+      "type": "boolean"
+    },
+    "functional_tests_available": {
+      "type": "boolean"
+    },
+    "reference_patch_available": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "eligible": {
+      "type": "boolean"
+    },
+    "exclusion_reason": {
+      "type": "string"
+    },
+    "eligibility_notes": {
+      "type": "string"
+    },
+    "auditor_id": {
+      "type": "string"
+    },
+    "audit_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "metadata_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "task_context_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-fA-F0-9]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "eligible": {
+            "const": true
+          }
+        },
+        "required": [
+          "eligible"
+        ]
+      },
+      "then": {
+        "properties": {
+          "exclusion_reason": {
+            "const": ""
+          },
+          "language": {
+            "const": "Python"
+          },
+          "vulnerable_state_status": {
+            "const": "PASS"
+          },
+          "reference_validation_status": {
+            "const": "PASS"
+          },
+          "reset_status": {
+            "const": "PASS"
+          },
+          "security_validator_available": {
+            "const": true
+          }
+        },
+        "required": [
+          "exclusion_reason",
+          "language",
+          "vulnerable_state_status",
+          "reference_validation_status",
+          "reset_status",
+          "security_validator_available"
+        ]
+      },
+      "else": {
+        "properties": {
+          "exclusion_reason": {
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

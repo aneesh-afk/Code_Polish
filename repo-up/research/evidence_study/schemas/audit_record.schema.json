@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-up.local/schemas/audit_record.schema.json",
+  "title": "Repo-Up Evidence Study Semantic Audit Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "reviewer_id", "initial_label", "adjudicated_label", "rationale_category", "reference_patch_revealed_after_initial_review"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "reviewer_id": {"type": "string", "minLength": 1},
+    "initial_label": {"enum": ["CORRECT", "INCOMPLETE", "INCORRECT", "OVERFIT", "REGRESSION", "UNASSESSABLE"]},
+    "second_reviewer_label": {"enum": ["CORRECT", "INCOMPLETE", "INCORRECT", "OVERFIT", "REGRESSION", "UNASSESSABLE", "NOT_AVAILABLE"]},
+    "adjudicated_label": {"enum": ["CORRECT", "INCOMPLETE", "INCORRECT", "OVERFIT", "REGRESSION", "UNASSESSABLE"]},
+    "rationale_category": {"type": "string", "minLength": 1},
+    "rationale_notes": {"type": "string"},
+    "reference_patch_revealed_after_initial_review": {"type": "boolean"},
+    "audit_date": {"type": "string", "format": "date"}
+  }
+}

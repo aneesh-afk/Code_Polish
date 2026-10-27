@@ -17,5 +17,5 @@ codepolish/test_repo_unzipped/
 target/
 **/target/
 *.class
-
+.venv-phase0/
 .vscode/settings.json

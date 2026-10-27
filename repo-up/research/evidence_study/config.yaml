@@ -1,0 +1,123 @@
+protocol:
+  id: repo-up-evidence-study
+  version: 0.1.0
+  status: frozen_v0.1.0
+  title: "When Does Repair Evidence Pay Off? An Oracle-Guided Study of Evidence Selection for Python Vulnerability Repair"
+  language_scope: [Python]
+  primary_benchmark: PatchEval-Verified
+  primary_benchmark_repository: https://github.com/bytedance/PatchEval
+  primary_benchmark_metadata: patcheval/datasets/patcheval_verified.json
+  secondary_benchmark: BugsInPy
+  secondary_benchmark_use: external_validity_only_or_predeclared_fallback_after_protocol_amendment
+
+model:
+  provider: local_open_weights
+  model_id: Qwen/Qwen2.5-Coder-7B-Instruct
+  license: Apache-2.0
+  training: false
+  fine_tuning: false
+  training_mode: none
+  paid_api: false
+  revision: "MUST_BE_PINNED_BEFORE_PILOT"
+  inference_stack: "MUST_BE_PINNED_BEFORE_PILOT"
+  quantization: "Select based on free GPU memory during Phase 2 smoke test; record exact format and artifact hash before pilot; never switch within confirmatory run."
+  temperature: 0.2
+  top_p: 0.95
+  max_new_tokens: 1024
+  prompt_token_budget: 8192
+  stochastic_repeats_per_task_arm: 3
+  maximum_repair_attempts_for_iterative_arm: 3
+
+resources:
+  compute: free_GPU_inference_preferred
+  model_training: false
+  inference_cost_accounting: [input_tokens, output_tokens, model_calls, wall_seconds, gpu_seconds]
+  docker_evaluation: required_for_primary_security_validation
+  network_in_evaluation_container: disabled_when_supported
+  container_user: non_root_when_supported
+  record_runtime_and_resource_limits: true
+
+eligibility:
+  primary_language: Python
+  require_official_task_metadata: true
+  require_official_evaluator: true
+  require_reproducible_vulnerable_state: true
+  require_official_reference_patch_or_documented_reference_validation: true
+  require_reset_to_clean_vulnerable_state: true
+  require_reference_patch_validation: true
+  require_reference_validation_pass_for_primary_inclusion: true
+  no_hidden_artifacts_in_model_context: true
+  no_reference_patch_or_fixed_function_in_model_context: true
+  no_synthetic_cases_in_confirmatory_dataset: true
+  keep_exclusion_reasons: true
+  keep_tasks_with_failed_model_generation: true
+
+arms:
+  - id: A0
+    name: llm_minimal_context
+    required: true
+    evidence: [CVE_description, CWE_if_available, benchmark_vulnerable_function_or_region]
+  - id: A1
+    name: llm_plus_ast_context
+    required: true
+    evidence_additions: [relevant_imports, enclosing_definitions, local_AST_structure, bounded_nearby_statements]
+  - id: A2
+    name: llm_plus_file_graph_context
+    required: true
+    evidence_additions: [Repo-Up_file_level_import_dependency_neighbourhood]
+  - id: A3
+    name: llm_plus_pre_patch_runtime_evidence
+    required: true
+    evidence_additions: [sanitized_summary_of_official_pre_patch_validation_output]
+  - id: A4
+    name: llm_plus_targeted_diagnostic_probes
+    required_if_applicable: true
+    evidence_additions: [bounded_observations_from_existing_benchmark_inputs_or_tests]
+    guardrails: [no_generated_tests, no_reference_patch, no_hidden_test_source, isolated_execution]
+  - id: A5
+    name: bounded_iterative_repair_with_test_feedback
+    required_if_applicable: true
+    evidence_additions: [sanitized_official_validator_feedback_after_failed_attempt]
+    maximum_total_attempts: 3
+  - id: A6
+    name: repo_up_deterministic_repair_only
+    required_if_applicable: true
+    applicability_must_be_decided_before_outcomes: true
+  - id: A7
+    name: abstain_no_patch
+    required: true
+    evidence: []
+
+execution:
+  clean_reset_before_each_attempt: true
+  randomize_arm_order_per_task_and_repeat: true
+  isolate_evaluation_per_attempt: true
+  preserve_all_generation_and_application_failures: true
+  count_not_applicable_separately_from_failure: true
+  raw_records_append_only: true
+  save_patch_hash_not_hidden_reference_patch: true
+  prompt_and_context_hashes_required: true
+
+analysis:
+  primary_metric: security_validation_pass_rate
+  key_secondary_metric: strict_verified_success_rate_on_tasks_with_functional_tests
+  report_security_only_rate_separately_when_functional_tests_unavailable: true
+  semantic_audit_required_for_any_claim_of_correct_repair: true
+  primary_paired_contrasts: [A1_vs_A0, A2_vs_A0, A3_vs_A0]
+  multiple_comparison_correction: Holm
+  confidence_level: 0.95
+  bootstrap_cluster_unit: repository
+  oracle_core_arms: [A0, A1, A2, A3]
+  controller_minimum_tasks: 50
+  controller_minimum_distinct_repositories: 5
+  controller_minimum_oracle_headroom_pp: 5.0
+  controller_requires_bootstrap_ci_lower_bound_above_zero: true
+  controller_must_be_evaluated_on_held_out_repositories: true
+  if_sample_size_insufficient: descriptive_analysis_only_no_generalization_claim
+
+phase_gates:
+  phase0_required_outputs: [protocol.md, config.yaml, dataset_manifest.jsonl, audit_schema.csv, verify_phase0.py, tests/test_phase0.py]
+  phase1_gate: dataset_audit_complete_and_python_eligibility_count_reported
+  phase2_gate: verification_statuses_and_real_local_model_smoke_test_pass
+  pilot_gate: prompt_model_evaluator_and_resource_limits_frozen
+  full_run_gate: manifest_and_protocol_hashes_saved_before_first_confirmatory_run
