@@ -1,0 +1,15 @@
+{
+  "duplicate_cve_count": 0,
+  "duplicate_cve_ids": [],
+  "issues_count": 0,
+  "language_counts": {
+    "Go": 83,
+    "Javascript": 77,
+    "Python": 70
+  },
+  "python_candidates_count": 70,
+  "python_distinct_repositories": 48,
+  "source_commit": "b43285cdde80cc04608d5f1178a330b740c91c2d",
+  "source_path": "C:\\Users\\kvsva\\research\\PatchEval\\patcheval\\datasets\\patcheval_verified.json",
+  "total_records": 230
+}
