@@ -14,3 +14,8 @@ codepolish/test_repo_unzipped/
 # Ignore all python cache folders globally
 **/__pycache__/
 **/.pytest_cache/
+target/
+**/target/
+*.class
+
+.vscode/settings.json
