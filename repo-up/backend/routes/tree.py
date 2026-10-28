@@ -20,7 +20,7 @@ _UUID_RE = re.compile(
     re.IGNORECASE,
 )
 
-TEMP_DIR: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "temp")
+TEMP_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "temp")
 
 
 @router.get("/tree")

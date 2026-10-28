@@ -5,11 +5,13 @@ import os
 from typing import List, Dict, Any
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+import shutil
+from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
 
-from services.upload_service import SESSION_STORE
+from services.upload_service import SESSION_STORE, TEMP_DIR
 from analysis.finding import Finding
+from analysis.repair.patch_model import apply_patch_to_string
 from analysis.repair.repair_engine import get_candidate_patch
 from verification.sandbox import VerificationSandbox
 from verification.runner import discover_and_run_tests
@@ -123,6 +125,18 @@ async def stream_sandbox_run(session_id: str, findings: List[Dict[str, Any]]):
 
                 if pass_verification:
                     yield f"data: {json.dumps({'type': 'fix_passed', 'fix_idx': idx})}\n\n"
+                    
+                    # Persist the passed fix to the original session project_root
+                    try:
+                        target_project_file = os.path.join(project_root, patch.file)
+                        with open(target_project_file, "r", encoding="utf-8") as pf:
+                            source = pf.read()
+                        new_source = apply_patch_to_string(source, patch)
+                        with open(target_project_file, "w", encoding="utf-8") as pf:
+                            pf.write(new_source)
+                    except Exception as e:
+                        log.error(f"Failed to persist patch to project_root: {e}")
+
                 else:
                     msg = "Tests failed" if not test_pass else "Finding still present"
                     yield f"data: {json.dumps({'type': 'regression_detected', 'fix_idx': idx, 'message': msg})}\n\n"
@@ -146,4 +160,30 @@ async def request_sandbox_run(body: SandboxRunRequest):
     return StreamingResponse(
         stream_sandbox_run(body.session_id, body.findings),
         media_type="text/event-stream"
+    )
+
+@router.get("/sandbox/download")
+async def download_fixed_project(session_id: str):
+    project_root = os.path.join(TEMP_DIR, session_id)
+    if not os.path.isdir(project_root):
+        raise HTTPException(
+            status_code=404, 
+            detail={
+                "error": {
+                    "code": "REQUEST_ERROR",
+                    "message": "Session not found or expired on disk"
+                }
+            }
+        )
+
+    # Zip the project_root and serve it
+    zip_path = os.path.join(TEMP_DIR, f"{session_id}_fixed.zip")
+    if not os.path.exists(zip_path):
+        # Create the archive
+        shutil.make_archive(zip_path.replace(".zip", ""), 'zip', project_root)
+        
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename="repo_up_fixed.zip"
     )

@@ -24,7 +24,7 @@ _UUID_RE = re.compile(
     re.IGNORECASE,
 )
 
-TEMP_DIR: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "temp")
+TEMP_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "temp")
 
 # Maximum bytes returned to the browser (~1 MB is plenty for a code viewer).
 MAX_RESPONSE_BYTES: int = 1 * 1024 * 1024
