@@ -13,6 +13,7 @@ from analysis.finding import Finding
 from analysis.repair.repair_engine import get_candidate_patch
 from verification.sandbox import VerificationSandbox
 from verification.runner import discover_and_run_tests
+from verification.status_policy import is_verified_pass
 from analysis.rules.smells.smell_engine import run_smell_engine
 from analysis.rules.security.security_engine import run_security_engine
 from services.tree_service import generate_project_tree
@@ -118,11 +119,19 @@ async def stream_sandbox_run(session_id: str, findings: List[Dict[str, Any]]):
                             security_pass = False
                             break
                             
-                test_pass = test_status in ("PASS", "NOT_AVAILABLE")
-                pass_verification = static_pass and security_pass and test_pass
+                # Unavailable tests are not evidence of success. Only an explicit PASS
+                # can satisfy the runtime-verification part of this workflow.
+                test_pass = test_status == "PASS"
+                pass_verification = is_verified_pass(test_status, static_pass, security_pass)
 
                 if pass_verification:
                     yield f"data: {json.dumps({'type': 'fix_passed', 'fix_idx': idx})}\n\n"
+                elif test_status == "NOT_AVAILABLE":
+                    yield f"data: {json.dumps({'type': 'verification_incomplete', 'fix_idx': idx, 'message': 'Runtime tests unavailable; patch is not verified.'})}\n\n"
+                    # Restore original content so unverified patch is not retained
+                    if backup_content is not None:
+                        with open(target_file, "w", encoding="utf-8") as f:
+                            f.write(backup_content)
                 else:
                     msg = "Tests failed" if not test_pass else "Finding still present"
                     yield f"data: {json.dumps({'type': 'regression_detected', 'fix_idx': idx, 'message': msg})}\n\n"
